@@ -50,8 +50,7 @@ typedef struct _eeprom_t
 /* XXX: Enough for this first release */
 static EEPROM_HDR epr;
 
-
-
+char filename[256] = "eeprom.bin";
 
 typedef int (*CMD_FUNCTION) (EEPROM_HDR*, char*);
 
@@ -181,7 +180,7 @@ eeprom_dump (EEPROM_HDR *e)
   return 0;
 }
 
-int 
+int
 eeprom_write (EEPROM_HDR *e, char *fname)
 {
   FILE *f;
@@ -190,10 +189,29 @@ eeprom_write (EEPROM_HDR *e, char *fname)
 
   if ((f = fopen (fname, "wb")) == NULL)
     {
-      fprintf (stderr, "Cannot open file test.eeprom\n");
+      fprintf (stderr, "Cannot open file '%s'\n", fname);
       exit (1);
     }
-  fwrite (&epr, sizeof (EEPROM_HDR), 1, f);
+  fwrite (e, sizeof (*e), 1, f);
+  fclose (f);
+  _dirty = 0;
+
+  return 0;
+}
+
+int
+eeprom_read (EEPROM_HDR *e, char *fname)
+{
+  FILE *f;
+
+  if (!e) return -1;
+
+  if ((f = fopen (fname, "rb")) == NULL)
+    {
+      fprintf (stderr, "Cannot open file '%s'\n", fname);
+      exit (1);
+    }
+  fread (e, sizeof (*e), 1, f);
   fclose (f);
   _dirty = 0;
 
@@ -220,8 +238,6 @@ eeprom_print_board_info (EEPROM_HDR *e)
 int
 cmd_general (EEPROM_HDR *e, char *buffer)
 {
-  char  *fname;
-
   switch (buffer[0])
     {
     case 'q':
@@ -230,10 +246,18 @@ cmd_general (EEPROM_HDR *e, char *buffer)
       }
     case 'w':
       {
-	if (strlen (buffer + 2) == 0) fname = "eeprom.bin";
-	else fname = buffer + 2;
-	fprintf (stderr, "+ Writting EEPROM to file '%s'\n\n", fname);
-	eeprom_write (e, fname);
+	if (strlen (buffer + 2) > 0)
+          strcpy(filename, buffer + 2);
+	fprintf (stderr, "+ Writting EEPROM to file '%s'\n\n", filename);
+	eeprom_write (e, filename);
+	break;
+      }
+    case 'r':
+      {
+	if (strlen (buffer + 2) > 0)
+          strcpy(filename, buffer + 2);
+	fprintf (stderr, "+ Reading EEPROM from file '%s'\n\n", filename);
+	eeprom_read (e, filename);
 	break;
       }
     case 'd':
@@ -472,6 +496,12 @@ main (int argc, char *argv[])
   set_eeprom_part_number (&epr, "BB-NULLCape");
   set_eeprom_n_pins (&epr, 0);
   set_eeprom_serial_number (&epr, "2912WTHR0383");
+
+  if (argc > 1)
+    {
+      strcpy(filename, argv[1]);
+      eeprom_read(&epr, filename);
+    }
   
   _dirty = 0;
   flag = 0;
