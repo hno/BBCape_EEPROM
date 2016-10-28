@@ -76,14 +76,22 @@ set_eeprom_serial_number (EEPROM_HDR *e, char *sn)
 
 
 int
+set_uint16(char data[2], int value)
+{
+  data[0] = (value >> 8) & 0xff;
+  data[1] = (value >> 0) & 0xff;
+}
+
+int
+get_uint16(char data[2])
+{
+  return ((((unsigned char)data[0]) << 8) + (unsigned char)data[1]);
+}
+
+int
 set_eeprom_n_pins (EEPROM_HDR *e, int n)
 {
-  char   c[3];
-
-  snprintf (c, 3, "%02x", n);
-  e->n_pins[0] = c[0];
-  e->n_pins[1] = c[1];
-
+  set_uint16(e->n_pins, n);
   _dirty = 1;
 
   return 0;
@@ -230,6 +238,10 @@ eeprom_print_board_info (EEPROM_HDR *e)
   fprintf (stderr, "4. Part Number (16 bytes)       : %s\n", 
 	   e->part_number);
   fprintf (stderr, "5. Serial Number  (12 bytes)    : %s\n", e->serial);
+  fprintf (stderr, "6. VDD_3V3B current (mA)        : %d\n", get_uint16(e->vdd_3v3));
+  fprintf (stderr, "7. VDD_5V current (mA)          : %d\n", get_uint16(e->vdd_5v));
+  fprintf (stderr, "8. SYS_5V current (mA)          : %d\n", get_uint16(e->sys_5v));
+  fprintf (stderr, "9. DC supply current (mA)       : %d\n", get_uint16(e->dc));
   fprintf (stderr, "--- \n");
   return 0;
 }
@@ -356,6 +368,34 @@ cmd_board (EEPROM_HDR *e, char *cmd)
 	if (strlen (buffer) == 0) break;
 	buffer[12] = 0;
 	set_eeprom_serial_number (&epr, buffer);
+	break;
+      }
+    case '6':
+      {
+	fprintf (stderr, "VDD_3V3 current (mA) [%d]:\n", get_uint16(e->vdd_3v3));
+	fgets (buffer, 80, stdin);
+	set_uint16(e->vdd_3v3, atoi(buffer));
+	break;
+      }
+    case '7':
+      {
+	fprintf (stderr, "VDD_5V current (mA) [%d]:\n", get_uint16(e->vdd_5v));
+	fgets (buffer, 80, stdin);
+	set_uint16(e->vdd_5v, atoi(buffer));
+	break;
+      }
+    case '8':
+      {
+	fprintf (stderr, "SYS_5V current (mA) [%d]:\n", get_uint16(e->sys_5v));
+	fgets (buffer, 80, stdin);
+	set_uint16(e->sys_5v, atoi(buffer));
+	break;
+      }
+    case '9':
+      {
+	fprintf (stderr, "DC supply current (mA) [%d]:\n", get_uint16(e->dc));
+	fgets (buffer, 80, stdin);
+	set_uint16(e->dc, atoi(buffer));
 	break;
       }
 
