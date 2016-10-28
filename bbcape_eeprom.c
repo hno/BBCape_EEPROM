@@ -512,7 +512,8 @@ main (int argc, char *argv[])
 	       st_name[_state]);  
 
     skip_prompt:
-      fgets (buffer, LINE_SIZE, stdin);
+      if (!fgets (buffer, LINE_SIZE, stdin))
+        break;
       buffer[strlen(buffer) - 1] = 0; /* Chomp */
       if (strlen(buffer) <=0 ) goto skip_prompt;
       flag = cmd_func[_state] (&epr, buffer);
@@ -524,6 +525,6 @@ main (int argc, char *argv[])
 	    flag = 0;
 	}
     }
-  fprintf (stderr, "--\nThanks for using BeagleBoneCape EEPROM Generator\n");
+  fprintf (stderr, "\n--\nThanks for using BeagleBoneCape EEPROM Generator\n");
   fprintf (stderr, "Visit http://papermint-designs.com/community for more tools and tutorials\n\n");
 }
